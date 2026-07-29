@@ -29,8 +29,8 @@ def test_vacuum_path_body_v12():
         path = Path(data)
 
         assert len(path._path_data) == 2790
-        assert path._path_data[0] == {"x": 2.3, "y": 23.0}
-        assert path._path_data[-1] == {"x": 3.6, "y": 24.7}
+        assert path._path_data[0] == {"x": 2.3, "y": -23.0}
+        assert path._path_data[-1] == {"x": 3.6, "y": -24.7}
 
         # Should not raise.
         path.to_image(459, 240, (104.0, 65.0))

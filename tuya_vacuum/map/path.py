@@ -110,13 +110,17 @@ class Path:
             path_data_array = chunks(data_array[header_length:], 4)
 
         # This code is not accurate to what's expected to happen
+        # Version 12's y-axis already matches the layout bitmap's row order,
+        # so it doesn't need to be flipped like other versions do.
+        reverse_y = self.version != 12
+        format_path_point = create_format_path(reverse_y=reverse_y, hide_path=True)
+
         path_data = []
         for point in path_data_array:
             [x, y] = [
                 deal_pl(combine_high_low_to_int(high, low))
                 for high, low in chunks(point, 2)
             ]
-            format_path_point = create_format_path(reverse_y=True, hide_path=True)
             real_point = format_path_point(x, y)
             path_data.append(real_point)
 
