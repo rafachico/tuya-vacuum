@@ -16,6 +16,11 @@ from tuya_vacuum.utils import (
 # The length of the path header in bytes
 PATH_HEADER_LENGTH = 26
 
+# The length of the path header in bytes for version 12.
+# This version has no total_count/theta/length_after_compression fields, and
+# its path data is always uncompressed.
+PATH_HEADER_LENGTH_V12 = 8
+
 # Multiplier to increase the size of the path
 PATH_SCALE = 8
 
@@ -92,7 +97,9 @@ class Path:
         """
         data_array = hex_to_ints(data)
 
-        if self.length_after_compression:
+        if self.version == 12:
+            path_data_array = chunks(data_array[PATH_HEADER_LENGTH_V12:], 4)
+        elif self.length_after_compression:
             max_buffer_length = self.total_count * 4
             encoded_data_array = bytes(hex_to_ints(data[PATH_HEADER_LENGTH:]))
             decoded_data_array = uncompress(encoded_data_array)

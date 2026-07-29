@@ -54,3 +54,42 @@ def test_vacuum_map_room():
         assert vacuum_map.rooms[0].name == ""
         assert vacuum_map.rooms[0].vertex_num == 0
         assert vacuum_map.rooms[0].vertex_str == ""
+
+
+def test_vacuum_map_header_v152():
+    """Test how a version 152 vacuum map header is parsed.
+
+    Captured from a Kabum "Robô Aspirador de Pó 700", a rebranded Tuya
+    vacuum whose layout header has no total_count/length_after_compression
+    trailer.
+    """
+
+    with open("./tests/layout_152.bin", "rb") as file:
+        data = file.read()
+
+        vacuum_map = Layout(data)
+
+        assert vacuum_map.version == 152
+        assert vacuum_map.width == 459
+        assert vacuum_map.height == 240
+        assert vacuum_map.origin_x == 104.0
+        assert vacuum_map.origin_y == 65.0
+        assert vacuum_map.pile_x == 40.5
+
+
+def test_vacuum_map_body_v152():
+    """Test how a version 152 vacuum map body is parsed."""
+
+    with open("./tests/layout_152.bin", "rb") as file:
+        data = file.read()
+
+        vacuum_map = Layout(data)
+
+        # There's no room data for this version, unlike version 1.
+        assert vacuum_map.rooms == []
+
+        # The decompressed bitmap should have exactly one byte per pixel.
+        assert len(vacuum_map._map_data_array) == vacuum_map.width * vacuum_map.height
+
+        # Should not raise despite there being no room data.
+        vacuum_map.to_image()

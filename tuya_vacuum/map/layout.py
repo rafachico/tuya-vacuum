@@ -23,6 +23,11 @@ from tuya_vacuum.utils import (
 # Length of map header in bytes
 MAP_HEADER_LENGTH = 48
 
+# Length of the map header in bytes for version 152.
+# This version has no total_count/length_after_compression fields - the
+# compressed bitmap starts right after pile_y.
+MAP_HEADER_LENGTH_V152 = 36
+
 _LOGGER = logging.getLogger(__name__)
 
 
@@ -57,6 +62,9 @@ class Layout:
 
             case 2:
                 self._parse_map_version_2(hex_data)
+
+            case 152:
+                self._parse_map_version_152(hex_data)
 
             # Default case
             case _:
@@ -165,6 +173,20 @@ class Layout:
         """Parse the data of a vacuum map with version 2."""
         # "Floor Material Version" according to google translate
         raise NotImplementedError("Map version 2 is not yet supported.")
+
+    def _parse_map_version_152(self, data: str):
+        """Parse the data of a vacuum map with version 152.
+
+        Seen on some rebranded/newer Tuya vacuums (ex. Kabum "Robô Aspirador
+        de Pó 700"). Structurally like version 1, but there's no
+        total_count/length_after_compression trailer in the header, and the
+        decompressed bitmap has no trailing room data.
+        """
+        area = self.width * self.height
+        encoded_data_array = bytes(hex_to_ints(data[MAP_HEADER_LENGTH_V152:]))
+        decoded_data_array = uncompress(encoded_data_array)
+        self._map_data_array = decoded_data_array[:area]
+        self.rooms = []
 
     def to_image(self) -> Image.Image:
         """Convert the map to an image.
