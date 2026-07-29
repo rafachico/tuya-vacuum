@@ -16,6 +16,11 @@ from tuya_vacuum.utils import (
 # The length of the path header in bytes
 PATH_HEADER_LENGTH = 26
 
+# The length of the path header in bytes for version 12.
+# This version has no total_count/theta/length_after_compression fields, and
+# its path data is always uncompressed.
+PATH_HEADER_LENGTH_V12 = 8
+
 # Multiplier to increase the size of the path
 PATH_SCALE = 8
 
@@ -92,7 +97,9 @@ class Path:
         """
         data_array = hex_to_ints(data)
 
-        if self.length_after_compression:
+        if self.version == 12:
+            path_data_array = chunks(data_array[PATH_HEADER_LENGTH_V12:], 4)
+        elif self.length_after_compression:
             max_buffer_length = self.total_count * 4
             encoded_data_array = bytes(hex_to_ints(data[PATH_HEADER_LENGTH:]))
             decoded_data_array = uncompress(encoded_data_array)
@@ -103,13 +110,17 @@ class Path:
             path_data_array = chunks(data_array[header_length:], 4)
 
         # This code is not accurate to what's expected to happen
+        # Version 12's y-axis already matches the layout bitmap's row order,
+        # so it doesn't need to be flipped like other versions do.
+        reverse_y = self.version != 12
+        format_path_point = create_format_path(reverse_y=reverse_y, hide_path=True)
+
         path_data = []
         for point in path_data_array:
             [x, y] = [
                 deal_pl(combine_high_low_to_int(high, low))
                 for high, low in chunks(point, 2)
             ]
-            format_path_point = create_format_path(reverse_y=True, hide_path=True)
             real_point = format_path_point(x, y)
             path_data.append(real_point)
 
